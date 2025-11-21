@@ -33,19 +33,23 @@ export default function Translator() {
     );
   };
 
-  // --- 🧠 Новый способ определения исходного языка ---
-  function detectLangByChars(s) {
-    let latin = 0,
-      cyr = 0;
-    for (let ch of s) {
-      if (/[A-Za-z]/.test(ch)) latin++;
-      else if (/[А-Яа-яЁё]/.test(ch)) cyr++;
-    }
-    if (latin === 0 && cyr === 0) return "ru"; // если нет букв, по умолчанию русский
-    return latin > cyr ? "en" : "ru";
+  // 🔥 Улучшенный детектор языка
+  function detectLanguageImproved(text) {
+    const t = text.trim().toLowerCase();
+
+    // чистый английский
+    if (/^[a-z0-9.,!?'"()\-\s]+$/i.test(t)) return "en";
+
+    // кириллица → русский
+    if (/[а-яёүұқғәіһңө]/i.test(t)) return "ru";
+
+    // турецкие специальные буквы
+    if (/[çğıöşü]/i.test(t)) return "tr";
+
+    return "auto";
   }
 
-  // Функция латинизации (для турецкого текста)
+  // Латинизация турецкого
   const toLatin = (str) =>
     str
       .replace(/А/g, "A")
@@ -78,8 +82,8 @@ export default function Translator() {
     setError("");
     setTranslations({});
 
-    // ✅ Определяем направление перевода по количеству символов
-    const detectedSource = detectLangByChars(text);
+    // 🔥 Новый детектор стоит здесь
+    const detectedSource = detectLanguageImproved(text);
 
     try {
       const results = {};
@@ -87,6 +91,7 @@ export default function Translator() {
       for (const target of targets) {
         const res = await fetch("http://localhost:5000/api/translate", {
           method: "POST",
+          cache: "no-store",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             text,
@@ -106,7 +111,6 @@ export default function Translator() {
         const data = await res.json();
         let output = data.translation || "(нет перевода)";
 
-        // Принудительная латинизация для турецкого
         if (target === "tr") output = toLatin(output);
 
         results[target] = output;
@@ -148,7 +152,8 @@ export default function Translator() {
           gap: 10,
           alignItems: "center",
           flexWrap: "wrap",
-        }}>
+        }}
+      >
         <span style={{ color: "#9ca3af" }}>Язык → Цели:</span>
 
         <div style={{ position: "relative" }}>
@@ -161,7 +166,8 @@ export default function Translator() {
               borderRadius: 8,
               padding: "8px 12px",
               cursor: "pointer",
-            }}>
+            }}
+          >
             {targets.length > 0
               ? `Выбрано: ${targets.length}`
               : "Выбрать языки"}
@@ -181,7 +187,8 @@ export default function Translator() {
                 maxHeight: 200,
                 overflowY: "auto",
                 width: 180,
-              }}>
+              }}
+            >
               {languages.map((lang) => (
                 <label
                   key={lang.code}
@@ -193,7 +200,8 @@ export default function Translator() {
                     fontSize: 14,
                     marginBottom: 6,
                     cursor: "pointer",
-                  }}>
+                  }}
+                >
                   <input
                     type="checkbox"
                     checked={targets.includes(lang.code)}
@@ -216,7 +224,8 @@ export default function Translator() {
             borderRadius: 8,
             padding: "8px 16px",
             cursor: "pointer",
-          }}>
+          }}
+        >
           {loading ? "Перевожу..." : "Перевести"}
         </button>
 
@@ -233,7 +242,8 @@ export default function Translator() {
             setText("");
             setTranslations({});
             setError("");
-          }}>
+          }}
+        >
           Очистить
         </button>
       </div>
@@ -253,7 +263,8 @@ export default function Translator() {
             borderRadius: 8,
             color: "white",
             whiteSpace: "pre-wrap",
-          }}>
+          }}
+        >
           <strong>Результаты перевода:</strong>
 
           <div style={{ marginTop: 8 }}>
