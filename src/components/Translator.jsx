@@ -90,7 +90,7 @@ export default function Translator() {
 
       for (const target of targets) {
         const res = await fetch(
-          "https://ai-menu-translator-server.onrender.com",
+          "https://ai-menu-translator-server.onrender.com/api/translate",
           {
             method: "POST",
             cache: "no-store",
