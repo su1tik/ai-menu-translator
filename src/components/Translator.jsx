@@ -89,17 +89,20 @@ export default function Translator() {
       const results = {};
 
       for (const target of targets) {
-        const res = await fetch("http://localhost:5000/api/translate", {
-          method: "POST",
-          cache: "no-store",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            text,
-            source: detectedSource,
-            target,
-            forceTarget: true,
-          }),
-        });
+        const res = await fetch(
+          "https://ai-menu-translator-server.onrender.com",
+          {
+            method: "POST",
+            cache: "no-store",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              text,
+              source: detectedSource,
+              target,
+              forceTarget: true,
+            }),
+          }
+        );
 
         if (!res.ok) {
           const err = await res.json().catch(() => ({
@@ -152,8 +155,7 @@ export default function Translator() {
           gap: 10,
           alignItems: "center",
           flexWrap: "wrap",
-        }}
-      >
+        }}>
         <span style={{ color: "#9ca3af" }}>Язык → Цели:</span>
 
         <div style={{ position: "relative" }}>
@@ -166,8 +168,7 @@ export default function Translator() {
               borderRadius: 8,
               padding: "8px 12px",
               cursor: "pointer",
-            }}
-          >
+            }}>
             {targets.length > 0
               ? `Выбрано: ${targets.length}`
               : "Выбрать языки"}
@@ -187,8 +188,7 @@ export default function Translator() {
                 maxHeight: 200,
                 overflowY: "auto",
                 width: 180,
-              }}
-            >
+              }}>
               {languages.map((lang) => (
                 <label
                   key={lang.code}
@@ -200,8 +200,7 @@ export default function Translator() {
                     fontSize: 14,
                     marginBottom: 6,
                     cursor: "pointer",
-                  }}
-                >
+                  }}>
                   <input
                     type="checkbox"
                     checked={targets.includes(lang.code)}
@@ -224,8 +223,7 @@ export default function Translator() {
             borderRadius: 8,
             padding: "8px 16px",
             cursor: "pointer",
-          }}
-        >
+          }}>
           {loading ? "Перевожу..." : "Перевести"}
         </button>
 
@@ -242,8 +240,7 @@ export default function Translator() {
             setText("");
             setTranslations({});
             setError("");
-          }}
-        >
+          }}>
           Очистить
         </button>
       </div>
@@ -263,8 +260,7 @@ export default function Translator() {
             borderRadius: 8,
             color: "white",
             whiteSpace: "pre-wrap",
-          }}
-        >
+          }}>
           <strong>Результаты перевода:</strong>
 
           <div style={{ marginTop: 8 }}>
