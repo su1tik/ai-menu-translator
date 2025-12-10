@@ -1,0 +1,112 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+/* Светлая тема */
+:root {
+  --bg: #ffffff;
+  --card-bg: #f3f4f6;
+  --text: #1f2937;
+  --border: #d1d5db;
+
+  --btn-primary: #2563eb;
+  --btn-secondary: #4b5563;
+
+  --dropdown-bg: #ffffff;
+  --dropdown-border: #d1d5db;
+}
+
+/* Тёмная тема */
+body.dark {
+  --bg: #0f172a;
+  --card-bg: #1e293b;
+  --text: #ffffff;
+  --border: #334155;
+
+  --btn-primary: #2563eb;
+  --btn-secondary: #334155;
+
+  --dropdown-bg: #1e293b;
+  --dropdown-border: #334155;
+}
+
+/* Общий стиль */
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: sans-serif;
+}
+
+/* Карточка */
+.card {
+  background: var(--card-bg);
+  color: var(--text);
+  padding: 24px; /* Чуть больше воздуха */
+  border-radius: 16px;
+  
+  /* Адаптивная ширина */
+  width: 100%;
+  max-width: 600px; /* Максимальная ширина */
+  
+  margin: 60px auto; /* Центрирование */
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.3); /* Тень помягче */
+}
+
+/* Textarea */
+.input-box {
+  width: 100%; /* Теперь это ровно 100% от родителя, включая отступы */
+  background: var(--card-bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 16px;
+  resize: vertical; /* Разрешаем менять размер только по вертикали */
+  min-height: 100px;
+}
+
+/* Кнопки */
+.btn {
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: white;
+}
+
+.btn-primary {
+  background: var(--btn-primary);
+}
+
+.btn-secondary {
+  background: var(--btn-secondary);
+}
+
+.btn-grey {
+  background: #6b7280;
+}
+
+.copy-btn.copied {
+  background: #16a34a !important;
+}
+
+/* Dropdown */
+.dropdown {
+  position: absolute;
+  top: 110%;
+  left: 0;
+  background: var(--dropdown-bg);
+  border: 1px solid var(--dropdown-border);
+  padding: 10px;
+  border-radius: 8px;
+  width: 180px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 10;
+}
+
+.dropdown button,
+.dropdown label {
+  color: var(--text);
+}

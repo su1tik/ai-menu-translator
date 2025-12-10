@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import Translator from "./components/Translator";
 import { lightTheme, darkTheme } from "./themes";
-import "./styles.css";
+import "./main.css";
 
 export default function App() {
   const [theme, setTheme] = useState("light");
@@ -18,11 +18,11 @@ export default function App() {
       <div className="card">
         <div className="header">
           {/* <h1>AI Menu Translator</h1> */}
-          <button
+          {/* <button
             className="button"
             onClick={() => setTheme(theme === "light" ? "dark" : "light")}>
             {theme === "light" ? "🌙 Тёмная тема" : "☀️ Светлая тема"}
-          </button>
+          </button> */}
         </div>
 
         <p className="small">Переводчик для электронных меню (На все языки)</p>

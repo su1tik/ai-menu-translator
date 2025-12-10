@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function Translator() {
   const [text, setText] = useState("");
@@ -7,6 +7,20 @@ export default function Translator() {
   const [error, setError] = useState("");
   const [targets, setTargets] = useState(["kk"]);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [theme, setTheme] = useState("light");
+
+  useEffect(() => {
+    const saved = localStorage.getItem("theme") || "light";
+    setTheme(saved);
+    document.body.classList.toggle("dark", saved === "dark");
+  }, []);
+
+  const toggleTheme = () => {
+    const next = theme === "light" ? "dark" : "light";
+    setTheme(next);
+    localStorage.setItem("theme", next);
+    document.body.classList.toggle("dark", next === "dark");
+  };
 
   const languages = [
     { code: "ru", name: "Русский" },
@@ -15,7 +29,7 @@ export default function Translator() {
     { code: "az", name: "Азербайджанский" },
     { code: "uz", name: "Узбекский" },
     { code: "uk", name: "Украинский" },
-    { code: "hi", name: "Хинди (Индийский)" },
+    { code: "hi", name: "Хинди" },
     { code: "en", name: "Английский" },
     { code: "tr", name: "Турецкий" },
     { code: "fr", name: "Французский" },
@@ -25,33 +39,22 @@ export default function Translator() {
     { code: "ja", name: "Японский" },
   ];
 
-  const handleTargetChange = (langCode) => {
+  const handleTargetChange = (code) => {
     setTargets((prev) =>
-      prev.includes(langCode)
-        ? prev.filter((c) => c !== langCode)
-        : [...prev, langCode]
+      prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]
     );
   };
 
-  // 🔥 Улучшенный детектор языка
   function detectLanguageImproved(text) {
     const t = text.trim().toLowerCase();
-
-    // чистый английский
     if (/^[a-z0-9.,!?'"()\-\s]+$/i.test(t)) return "en";
-
-    // кириллица → русский
     if (/[а-яёүұқғәіһңө]/i.test(t)) return "ru";
-
-    // турецкие специальные буквы
     if (/[çğıöşü]/i.test(t)) return "tr";
-
     return "auto";
   }
 
-  // Латинизация турецкого
-  const toLatin = (str) =>
-    str
+  const toLatin = (s) =>
+    s
       .replace(/А/g, "A")
       .replace(/В/g, "B")
       .replace(/Е/g, "E")
@@ -82,131 +85,87 @@ export default function Translator() {
     setError("");
     setTranslations({});
 
-    // 🔥 Новый детектор стоит здесь
-    const detectedSource = detectLanguageImproved(text);
+    const source = detectLanguageImproved(text);
 
     try {
-      const results = {};
-
+      const result = {};
       for (const target of targets) {
-        const res = await fetch(
-          "https://ai-menu-translator-server.onrender.com/api/translate",
-          {
-            method: "POST",
-            cache: "no-store",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              text,
-              source: detectedSource,
-              target,
-              forceTarget: true,
-            }),
-          }
-        );
+        const res = await fetch("http://localhost:5000/api/translate", {
+          method: "POST",
+          cache: "no-store",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            text,
+            source,
+            target,
+            forceTarget: true,
+          }),
+        });
 
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({
-            error: "Ошибка сервера",
-          }));
-          throw new Error(err.error || "Ошибка ответа от сервера");
-        }
-
-        const data = await res.json();
-        let output = data.translation || "(нет перевода)";
-
+        const json = await res.json();
+        let output = json.translation || "(нет перевода)";
         if (target === "tr") output = toLatin(output);
 
-        results[target] = output;
+        result[target] = output;
       }
 
-      setTranslations(results);
-    } catch (e) {
-      setError(e.message || "Не удалось перевести");
+      setTranslations(result);
+    } catch {
+      setError("Ошибка перевода");
     } finally {
       setLoading(false);
     }
   }
 
+  const handleCopy = (text) => {
+    navigator.clipboard.writeText(text);
+    const btn = document.activeElement;
+    btn.classList.add("copied");
+    setTimeout(() => btn.classList.remove("copied"), 800);
+  };
+
   return (
-    <div className="translator-container">
-      <h1 style={{ marginBottom: 10 }}>🌐 KAMI Menu Translator</h1>
+    <div>
+      <button
+        onClick={toggleTheme}
+        className="btn btn-secondary"
+        style={{ marginBottom: 10 }}>
+        {theme === "light" ? "Тёмная тема" : "Светлая тема"}
+      </button>
+
+      <h2>KAMI Menu Translator</h2>
 
       <textarea
+        rows={4}
+        className="input-box"
         placeholder="Введите текст для перевода..."
         value={text}
         onChange={(e) => setText(e.target.value)}
-        rows={4}
-        style={{
-          width: "100%",
-          background: "#111827",
-          color: "white",
-          border: "1px solid #374151",
-          borderRadius: 8,
-          padding: 12,
-          fontSize: 16,
-          resize: "none",
-        }}
       />
 
       <div
-        style={{
-          marginTop: 12,
-          display: "flex",
-          gap: 10,
-          alignItems: "center",
-          flexWrap: "wrap",
-        }}>
-        <span style={{ color: "#9ca3af" }}>Язык → Цели:</span>
+        style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
+        <span style={{ opacity: 0.7 }}>Язык → Цели:</span>
 
         <div style={{ position: "relative" }}>
           <button
-            onClick={() => setShowDropdown((prev) => !prev)}
-            style={{
-              background: "#1f2937",
-              color: "white",
-              border: "1px solid #374151",
-              borderRadius: 8,
-              padding: "8px 12px",
-              cursor: "pointer",
-            }}>
+            className="btn btn-secondary"
+            onClick={() => setShowDropdown((prev) => !prev)}>
             {targets.length > 0
               ? `Выбрано: ${targets.length}`
               : "Выбрать языки"}
           </button>
 
           {showDropdown && (
-            <div
-              style={{
-                position: "absolute",
-                top: "110%",
-                left: 0,
-                background: "#1f2937",
-                border: "1px solid #374151",
-                borderRadius: 8,
-                padding: 10,
-                zIndex: 10,
-                maxHeight: 200,
-                overflowY: "auto",
-                width: 180,
-              }}>
-              {languages.map((lang) => (
-                <label
-                  key={lang.code}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 6,
-                    color: "white",
-                    fontSize: 14,
-                    marginBottom: 6,
-                    cursor: "pointer",
-                  }}>
+            <div className="dropdown">
+              {languages.map((l) => (
+                <label key={l.code} style={{ display: "flex", gap: 6 }}>
                   <input
                     type="checkbox"
-                    checked={targets.includes(lang.code)}
-                    onChange={() => handleTargetChange(lang.code)}
+                    checked={targets.includes(l.code)}
+                    onChange={() => handleTargetChange(l.code)}
                   />
-                  {lang.name}
+                  {l.name}
                 </label>
               ))}
             </div>
@@ -214,28 +173,14 @@ export default function Translator() {
         </div>
 
         <button
+          className="btn btn-primary"
           onClick={handleTranslate}
-          disabled={loading}
-          style={{
-            background: "#2563eb",
-            color: "white",
-            border: "none",
-            borderRadius: 8,
-            padding: "8px 16px",
-            cursor: "pointer",
-          }}>
+          disabled={loading}>
           {loading ? "Перевожу..." : "Перевести"}
         </button>
 
         <button
-          style={{
-            background: "#374151",
-            color: "white",
-            border: "none",
-            borderRadius: 8,
-            padding: "8px 16px",
-            cursor: "pointer",
-          }}
+          className="btn btn-grey"
           onClick={() => {
             setText("");
             setTranslations({});
@@ -245,36 +190,30 @@ export default function Translator() {
         </button>
       </div>
 
-      {error && (
-        <div style={{ color: "#f87171", marginTop: 12, fontWeight: 500 }}>
-          {error}
-        </div>
-      )}
+      {error && <div style={{ marginTop: 12, color: "#ef4444" }}>{error}</div>}
 
       {Object.keys(translations).length > 0 && (
-        <div
-          style={{
-            marginTop: 16,
-            background: "#1f2937",
-            padding: 12,
-            borderRadius: 8,
-            color: "white",
-            whiteSpace: "pre-wrap",
-          }}>
+        <div className="result-block" style={{ marginTop: 16 }}>
           <strong>Результаты перевода:</strong>
 
-          <div style={{ marginTop: 8 }}>
-            {Object.entries(translations).map(([lang, result]) => {
-              const langName =
-                languages.find((l) => l.code === lang)?.name || lang;
-              return (
-                <div key={lang} style={{ marginBottom: 10 }}>
-                  <b>{langName}:</b>
-                  <div>{result}</div>
+          {Object.entries(translations).map(([lang, result]) => {
+            const langName =
+              languages.find((l) => l.code === lang)?.name || lang;
+
+            return (
+              <div key={lang} style={{ marginTop: 12 }}>
+                <b>{langName}:</b>
+                <div style={{ display: "flex", gap: 10 }}>
+                  <div style={{ flex: 1 }}>{result}</div>
+                  <button
+                    onClick={() => handleCopy(result)}
+                    className="copy-btn btn btn-primary">
+                    Копировать
+                  </button>
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

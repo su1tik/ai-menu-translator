@@ -1,0 +1,702 @@
+
+
+==================================================
+FILE: ./package.json
+==================================================
+{
+  "name": "ai-menu-translator",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently \"npm run server\" \"npm run vite\"",
+    "server": "cd server && npm start",
+    "vite": "vite",
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.36.0",
+    "@types/react": "^19.1.16",
+    "@types/react-dom": "^19.1.9",
+    "@vitejs/plugin-react": "^5.0.4",
+    "concurrently": "^9.2.1",
+    "eslint": "^9.36.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.22",
+    "globals": "^16.4.0",
+    "kill-port": "^2.0.1",
+    "vite": "^7.1.7"
+  }
+}
+
+
+==================================================
+FILE: ./README.md
+==================================================
+# React + Vite
+
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+
+Currently, two official plugins are available:
+
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+
+## React Compiler
+
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+
+## Expanding the ESLint configuration
+
+If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+
+
+==================================================
+FILE: ./vite.config.js
+==================================================
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+// https://vite.dev/config/
+export default defineConfig({
+  plugins: [react()],
+})
+
+
+==================================================
+FILE: ./index.html
+==================================================
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/img/kami logo.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>KAMI-translator</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
+
+
+==================================================
+FILE: ./eslint.config.js
+==================================================
+import js from '@eslint/js'
+import globals from 'globals'
+import reactHooks from 'eslint-plugin-react-hooks'
+import reactRefresh from 'eslint-plugin-react-refresh'
+import { defineConfig, globalIgnores } from 'eslint/config'
+
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{js,jsx}'],
+    extends: [
+      js.configs.recommended,
+      reactHooks.configs['recommended-latest'],
+      reactRefresh.configs.vite,
+    ],
+    languageOptions: {
+      ecmaVersion: 2020,
+      globals: globals.browser,
+      parserOptions: {
+        ecmaVersion: 'latest',
+        ecmaFeatures: { jsx: true },
+        sourceType: 'module',
+      },
+    },
+    rules: {
+      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+    },
+  },
+])
+
+
+==================================================
+FILE: ./server/package.json
+==================================================
+{
+  "name": "server",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "kill-port 5000 && node index.js"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.7.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "kill-port": "^2.0.1"
+  }
+}
+
+
+==================================================
+FILE: ./server/index.js
+==================================================
+import dotenv from "dotenv";
+import express from "express";
+import cors from "cors";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+
+dotenv.config();
+
+const app = express();
+// app.use(cors());
+app.use(
+  cors({
+    origin: "*",
+    methods: ["GET", "POST"],
+    allowedHeaders: ["Content-Type"],
+  })
+);
+app.use(express.json());
+
+const apiKey = process.env.GEMINI_API_KEY;
+
+if (!apiKey) {
+  console.error("❌ GEMINI_API_KEY не найден в .env");
+  process.exit(1);
+}
+
+const genAI = new GoogleGenerativeAI(apiKey);
+const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+app.post("/api/translate", async (req, res) => {
+  try {
+    const { text, source, target } = req.body;
+
+    if (!text) {
+      return res.status(400).json({ error: "Текст не указан" });
+    }
+
+    let prompt = "";
+
+    // 🇹🇷 Турецкий язык
+    if (target === "tr") {
+      prompt = `
+Ты профессиональный переводчик ресторанных меню.
+Переведи текст строго на литературный турецкий язык (латиница).
+Не используй казахские слова, сохраняй стиль и структуру текста.
+Сохрани пунктуацию, заглавные буквы, скобки, символы и пробелы.
+Не добавляй пояснений, просто переведи текст.
+
+Текст для перевода:
+${text}
+`;
+    }
+
+    // 🇰🇿 Казахский язык
+    else if (target === "kk") {
+      prompt = `
+Ты профессиональный переводчик ресторанных меню.
+Переведи названия блюд и описания на казахский язык так, чтобы звучало естественно.
+Сохрани структуру, пунктуацию, пробелы, заглавные буквы и символы.
+Не добавляй пояснений или дополнительных слов.
+Используй следующие переводы, если они встречаются:
+
+Рыба:
+- Лосось → Албырт
+- Семга → Ақсерке
+- Судак → Көксерке
+- Форель → Бақтақ
+- Осетр → Бекіре
+- Сазан → Сазан балық
+- Угорь → Жыланбалық
+
+Морепродукты:
+- Креветка → Асшаян
+- Мидия → Мидия
+- Устрица → Устрица
+- Краб → Теңіз шаяны
+- Рак → Су шаян
+
+Овощи:
+- Баклажан → Баялды
+- Цуккини → Кәді
+- Шпинат → Асжапырақ
+- Помидоры → Қызанақ
+
+Мясо:
+- Конина → Жылқы еті
+- Телятина → Бұзау
+- Ягненок → Қозы
+
+Прочее:
+- Свежий → Балғын
+- Свежевыпеченный → Жаңа піскен
+- Яйцо пашот → Пашот жұмыртқасы
+- Сырники → Сүзбе ірімшіктері
+- Сливки → Кілегей
+- Соус → Тұздық
+
+Текст для перевода:
+${text}
+`;
+    }
+
+    // 🇬🇧 Английский язык
+    else if (target === "en") {
+      prompt = `
+You are a professional translator. Always translate the given text into clear, natural, and fluent **English** language — even if it looks similar to English.
+Do not skip or repeat any words. Translate absolutely everything, including individual words, short phrases, and full sentences.
+Keep **ALL** punctuation, capitalization, line breaks, parentheses, numbers, emojis, and symbols exactly as in the original text.
+Do not simplify or interpret the meaning — translate as accurately and literally as possible while keeping the natural flow of English.
+
+Текст для перевода:
+${text}
+`;
+    }
+
+    // 🌍 Общий промпт для остальных языков
+    else {
+      prompt = `
+Ты профессиональный переводчик ресторанных меню.
+Переведи текст с ${source || "одного"} языка на ${target || "другой"} язык.
+Сохрани пунктуацию, заглавные буквы, символы, пробелы и структуру.
+Не добавляй комментариев, переводи точно и аккуратно.
+
+Текст для перевода:
+${text}
+`;
+    }
+
+    const result = await model.generateContent(prompt);
+
+    const translation =
+      result?.response?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ||
+      "Перевод не найден";
+
+    res.json({ translation });
+  } catch (error) {
+    console.error("❌ Ошибка Gemini API:", error.message || error);
+    res.status(500).json({ error: "Ошибка при обращении к Gemini API" });
+  }
+});
+
+const port = process.env.PORT || 5000;
+app.listen(port, () => console.log(`✅ Сервер запущен на порту ${port}`));
+
+
+==================================================
+FILE: ./src/main.css
+==================================================
+/* Светлая тема */
+:root {
+  --bg: #ffffff;
+  --card-bg: #f3f4f6;
+  --text: #1f2937;
+  --border: #d1d5db;
+
+  --btn-primary: #2563eb;
+  --btn-secondary: #4b5563;
+
+  --dropdown-bg: #ffffff;
+  --dropdown-border: #d1d5db;
+}
+
+/* Тёмная тема */
+body.dark {
+  --bg: #0f172a;
+  --card-bg: #1e293b;
+  --text: #ffffff;
+  --border: #334155;
+
+  --btn-primary: #2563eb;
+  --btn-secondary: #334155;
+
+  --dropdown-bg: #1e293b;
+  --dropdown-border: #334155;
+}
+
+/* Общий стиль */
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: sans-serif;
+}
+
+/* Карточка */
+.card {
+  background: var(--card-bg);
+  color: var(--text);
+  padding: 20px;
+  border-radius: 14px;
+  width: 600px;
+  margin: 80px auto;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+}
+
+/* Textarea */
+.input-box {
+  width: 100%;
+  background: var(--card-bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 16px;
+  resize: none;
+}
+
+/* Кнопки */
+.btn {
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: white;
+}
+
+.btn-primary {
+  background: var(--btn-primary);
+}
+
+.btn-secondary {
+  background: var(--btn-secondary);
+}
+
+.btn-grey {
+  background: #6b7280;
+}
+
+.copy-btn.copied {
+  background: #16a34a !important;
+}
+
+/* Dropdown */
+.dropdown {
+  position: absolute;
+  top: 110%;
+  left: 0;
+  background: var(--dropdown-bg);
+  border: 1px solid var(--dropdown-border);
+  padding: 10px;
+  border-radius: 8px;
+  width: 180px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 10;
+}
+
+.dropdown button,
+.dropdown label {
+  color: var(--text);
+}
+
+
+==================================================
+FILE: ./src/main.jsx
+==================================================
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import App from "./App.jsx";
+import "./main.css";
+
+createRoot(document.getElementById("root")).render(
+  <StrictMode>
+    <App />
+  </StrictMode>
+);
+
+
+==================================================
+FILE: ./src/themes.js
+==================================================
+export const lightTheme = {
+  "--bg-color": "#f4f6f9",
+  "--card-bg": "#ffffff",
+  "--text-color": "#111827",
+  "--button-bg": "#2563eb",
+  "--button-hover": "#1d4ed8",
+  "--input-bg": "#ffffff",
+  "--border-color": "#e5e7eb",
+};
+
+export const darkTheme = {
+  "--bg-color": "#111827",
+  "--card-bg": "#1f2937",
+  "--text-color": "#f9fafb",
+  "--button-bg": "#3b82f6",
+  "--button-hover": "#2563eb",
+  "--input-bg": "#1e293b",
+  "--border-color": "#374151",
+};
+
+
+==================================================
+FILE: ./src/App.jsx
+==================================================
+import { useEffect, useState } from "react";
+import Translator from "./components/Translator";
+import { lightTheme, darkTheme } from "./themes";
+import "./main.css";
+
+export default function App() {
+  const [theme, setTheme] = useState("light");
+
+  useEffect(() => {
+    const selectedTheme = theme === "light" ? lightTheme : darkTheme;
+    Object.entries(selectedTheme).forEach(([key, value]) =>
+      document.documentElement.style.setProperty(key, value)
+    );
+  }, [theme]);
+
+  return (
+    <div className="app">
+      <div className="card">
+        <div className="header">
+          {/* <h1>AI Menu Translator</h1> */}
+          {/* <button
+            className="button"
+            onClick={() => setTheme(theme === "light" ? "dark" : "light")}>
+            {theme === "light" ? "🌙 Тёмная тема" : "☀️ Светлая тема"}
+          </button> */}
+        </div>
+
+        <p className="small">Переводчик для электронных меню (На все языки)</p>
+
+        <Translator />
+      </div>
+    </div>
+  );
+}
+
+
+==================================================
+FILE: ./src/components/Translator.jsx
+==================================================
+import { useState, useEffect } from "react";
+
+export default function Translator() {
+  const [text, setText] = useState("");
+  const [translations, setTranslations] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [targets, setTargets] = useState(["kk"]);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [theme, setTheme] = useState("light");
+
+  useEffect(() => {
+    const saved = localStorage.getItem("theme") || "light";
+    setTheme(saved);
+    document.body.classList.toggle("dark", saved === "dark");
+  }, []);
+
+  const toggleTheme = () => {
+    const next = theme === "light" ? "dark" : "light";
+    setTheme(next);
+    localStorage.setItem("theme", next);
+    document.body.classList.toggle("dark", next === "dark");
+  };
+
+  const languages = [
+    { code: "ru", name: "Русский" },
+    { code: "kk", name: "Казахский" },
+    { code: "ky", name: "Киргизский" },
+    { code: "az", name: "Азербайджанский" },
+    { code: "uz", name: "Узбекский" },
+    { code: "uk", name: "Украинский" },
+    { code: "hi", name: "Хинди" },
+    { code: "en", name: "Английский" },
+    { code: "tr", name: "Турецкий" },
+    { code: "fr", name: "Французский" },
+    { code: "de", name: "Немецкий" },
+    { code: "es", name: "Испанский" },
+    { code: "zh", name: "Китайский" },
+    { code: "ja", name: "Японский" },
+  ];
+
+  const handleTargetChange = (code) => {
+    setTargets((prev) =>
+      prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]
+    );
+  };
+
+  function detectLanguageImproved(text) {
+    const t = text.trim().toLowerCase();
+    if (/^[a-z0-9.,!?'"()\-\s]+$/i.test(t)) return "en";
+    if (/[а-яёүұқғәіһңө]/i.test(t)) return "ru";
+    if (/[çğıöşü]/i.test(t)) return "tr";
+    return "auto";
+  }
+
+  const toLatin = (s) =>
+    s
+      .replace(/А/g, "A")
+      .replace(/В/g, "B")
+      .replace(/Е/g, "E")
+      .replace(/К/g, "K")
+      .replace(/М/g, "M")
+      .replace(/Н/g, "N")
+      .replace(/О/g, "O")
+      .replace(/Р/g, "R")
+      .replace(/С/g, "S")
+      .replace(/Т/g, "T")
+      .replace(/У/g, "U")
+      .replace(/а/g, "a")
+      .replace(/в/g, "v")
+      .replace(/е/g, "e")
+      .replace(/к/g, "k")
+      .replace(/м/g, "m")
+      .replace(/н/g, "n")
+      .replace(/о/g, "o")
+      .replace(/р/g, "r")
+      .replace(/с/g, "s")
+      .replace(/т/g, "t")
+      .replace(/у/g, "u");
+
+  async function handleTranslate() {
+    if (!text.trim()) return;
+
+    setLoading(true);
+    setError("");
+    setTranslations({});
+
+    const source = detectLanguageImproved(text);
+
+    try {
+      const result = {};
+      for (const target of targets) {
+        const res = await fetch("http://localhost:5000/api/translate", {
+          method: "POST",
+          cache: "no-store",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            text,
+            source,
+            target,
+            forceTarget: true,
+          }),
+        });
+
+        const json = await res.json();
+        let output = json.translation || "(нет перевода)";
+        if (target === "tr") output = toLatin(output);
+
+        result[target] = output;
+      }
+
+      setTranslations(result);
+    } catch {
+      setError("Ошибка перевода");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const handleCopy = (text) => {
+    navigator.clipboard.writeText(text);
+    const btn = document.activeElement;
+    btn.classList.add("copied");
+    setTimeout(() => btn.classList.remove("copied"), 800);
+  };
+
+  return (
+    <div className="card">
+      <button
+        onClick={toggleTheme}
+        className="btn btn-secondary"
+        style={{ marginBottom: 10 }}>
+        {theme === "light" ? "Тёмная тема" : "Светлая тема"}
+      </button>
+
+      <h2>KAMI Menu Translator</h2>
+
+      <textarea
+        rows={4}
+        className="input-box"
+        placeholder="Введите текст для перевода..."
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+      />
+
+      <div
+        style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
+        <span style={{ opacity: 0.7 }}>Язык → Цели:</span>
+
+        <div style={{ position: "relative" }}>
+          <button
+            className="btn btn-secondary"
+            onClick={() => setShowDropdown((prev) => !prev)}>
+            {targets.length > 0
+              ? `Выбрано: ${targets.length}`
+              : "Выбрать языки"}
+          </button>
+
+          {showDropdown && (
+            <div className="dropdown">
+              {languages.map((l) => (
+                <label key={l.code} style={{ display: "flex", gap: 6 }}>
+                  <input
+                    type="checkbox"
+                    checked={targets.includes(l.code)}
+                    onChange={() => handleTargetChange(l.code)}
+                  />
+                  {l.name}
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <button
+          className="btn btn-primary"
+          onClick={handleTranslate}
+          disabled={loading}>
+          {loading ? "Перевожу..." : "Перевести"}
+        </button>
+
+        <button
+          className="btn btn-grey"
+          onClick={() => {
+            setText("");
+            setTranslations({});
+            setError("");
+          }}>
+          Очистить
+        </button>
+      </div>
+
+      {error && <div style={{ marginTop: 12, color: "#ef4444" }}>{error}</div>}
+
+      {Object.keys(translations).length > 0 && (
+        <div className="result-block" style={{ marginTop: 16 }}>
+          <strong>Результаты перевода:</strong>
+
+          {Object.entries(translations).map(([lang, result]) => {
+            const langName =
+              languages.find((l) => l.code === lang)?.name || lang;
+
+            return (
+              <div key={lang} style={{ marginTop: 12 }}>
+                <b>{langName}:</b>
+                <div style={{ display: "flex", gap: 10 }}>
+                  <div style={{ flex: 1 }}>{result}</div>
+                  <button
+                    onClick={() => handleCopy(result)}
+                    className="copy-btn btn btn-primary">
+                    Копировать
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
