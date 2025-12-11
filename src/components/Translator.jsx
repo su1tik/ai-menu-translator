@@ -90,7 +90,8 @@ export default function Translator() {
     try {
       const result = {};
       for (const target of targets) {
-        const res = await fetch("http://localhost:5000/api/translate", {
+        const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
+        const res = await fetch(`${apiUrl}/api/translate`, {
           method: "POST",
           cache: "no-store",
           headers: { "Content-Type": "application/json" },
