@@ -83,37 +83,59 @@ export default function Translator() {
 
     setLoading(true);
     setError("");
-    setTranslations({});
+    setTranslations({}); // Очищаем старые переводы
 
     const source = detectLanguageImproved(text);
+    const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
     try {
-      const result = {};
-      for (const target of targets) {
-        await new Promise((r) => setTimeout(r, 1000));
-        const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
-        const res = await fetch(`${apiUrl}/api/translate`, {
-          method: "POST",
-          cache: "no-store",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            text,
-            source,
-            target,
-            forceTarget: true,
-          }),
-        });
+      // Проходим по каждому языку по очереди
+      for (const [index, target] of targets.entries()) {
+        // Пауза перед запросом (кроме самого первого), чтобы не злить Google
+        // Увеличили до 1500мс (1.5 сек) для надежности
+        if (index > 0) {
+          await new Promise((resolve) => setTimeout(resolve, 1500));
+        }
 
-        const json = await res.json();
-        let output = json.translation || "(нет перевода)";
-        if (target === "tr") output = toLatin(output);
+        try {
+          const res = await fetch(`${apiUrl}/api/translate`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              text,
+              source,
+              target,
+            }),
+          });
 
-        result[target] = output;
+          const json = await res.json();
+
+          // Если сервер вернул ошибку (например, лимит), показываем её
+          if (json.error) {
+            throw new Error(json.error);
+          }
+
+          let output = json.translation;
+          if (!output) output = "Ошибка сервера (пустой ответ)";
+
+          if (target === "tr") output = toLatin(output);
+
+          // Обновляем состояние СРАЗУ, не дожидаясь остальных языков
+          setTranslations((prev) => ({
+            ...prev,
+            [target]: output,
+          }));
+        } catch (err) {
+          console.error(`Ошибка для языка ${target}:`, err);
+          // Записываем ошибку в поле перевода, чтобы было видно, что пошло не так
+          setTranslations((prev) => ({
+            ...prev,
+            [target]: "Не удалось перевести (попробуйте позже)",
+          }));
+        }
       }
-
-      setTranslations(result);
-    } catch {
-      setError("Ошибка перевода");
+    } catch (globalErr) {
+      setError("Общая ошибка приложения");
     } finally {
       setLoading(false);
     }
