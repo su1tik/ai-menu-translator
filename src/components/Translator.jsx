@@ -86,7 +86,8 @@ export default function Translator() {
     setTranslations({}); // Очищаем старые переводы
 
     const source = detectLanguageImproved(text);
-    const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
+    // const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
+    const apiUrl = "";
 
     try {
       // Проходим по каждому языку по очереди
