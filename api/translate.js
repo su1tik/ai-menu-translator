@@ -34,7 +34,7 @@ export default async function handler(req, res) {
     // Инициализация Gemini
     const genAI = new GoogleGenerativeAI(apiKey);
     // Используем стабильную быструю модель (1.5-flash)
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
     const { text, source, target } = req.body;
 
