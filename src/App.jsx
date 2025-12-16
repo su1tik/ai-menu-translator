@@ -17,12 +17,6 @@ export default function App() {
     <div className="app">
       <div className="card">
         <div className="header">
-          {/* <h1>AI Menu Translator</h1> */}
-          {/* <button
-            className="button"
-            onClick={() => setTheme(theme === "light" ? "dark" : "light")}>
-            {theme === "light" ? "🌙 Тёмная тема" : "☀️ Светлая тема"}
-          </button> */}
         </div>
 
         <p className="small">Переводчик для электронных меню (На все языки)</p>

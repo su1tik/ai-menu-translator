@@ -218,24 +218,30 @@ export default function Translator() {
       {error && <div style={{ marginTop: 12, color: "#ef4444" }}>{error}</div>}
 
       {Object.keys(translations).length > 0 && (
-        <div className="result-block" style={{ marginTop: 16 }}>
-          <strong>Результаты перевода:</strong>
-
+        <div className="result-block">
           {Object.entries(translations).map(([lang, result]) => {
             const langName =
               languages.find((l) => l.code === lang)?.name || lang;
 
             return (
-              <div key={lang} style={{ marginTop: 12 }}>
-                <b>{langName}:</b>
-                <div style={{ display: "flex", gap: 10 }}>
-                  <div style={{ flex: 1 }}>{result}</div>
+              <div key={lang} className="result-item">
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "flex-start",
+                    marginBottom: 8,
+                  }}>
+                  <span className="result-title">{langName}</span>
                   <button
                     onClick={() => handleCopy(result)}
-                    className="copy-btn btn btn-primary">
+                    className="copy-btn btn btn-primary"
+                    style={{ padding: "4px 10px", fontSize: "0.8rem" }}>
                     Копировать
                   </button>
                 </div>
+
+                <div className="result-text">{result}</div>
               </div>
             );
           })}

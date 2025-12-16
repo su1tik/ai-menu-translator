@@ -1,112 +1,247 @@
+/* Глобальный сброс для предсказуемых размеров */
 *,
 *::before,
 *::after {
   box-sizing: border-box;
 }
-/* Светлая тема */
+
 :root {
-  --bg: #ffffff;
-  --card-bg: #f3f4f6;
-  --text: #1f2937;
-  --border: #d1d5db;
+  /* Базовые настройки шрифта - используем системные шрифты (как в MacOS/Windows 11) */
+  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
 
-  --btn-primary: #2563eb;
-  --btn-secondary: #4b5563;
-
-  --dropdown-bg: #ffffff;
-  --dropdown-border: #d1d5db;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Тёмная тема */
-body.dark {
-  --bg: #0f172a;
-  --card-bg: #1e293b;
-  --text: #ffffff;
-  --border: #334155;
-
-  --btn-primary: #2563eb;
-  --btn-secondary: #334155;
-
-  --dropdown-bg: #1e293b;
-  --dropdown-border: #334155;
-}
-
-/* Общий стиль */
 body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: sans-serif;
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center; /* Центрируем карточку по вертикали */
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  transition: background-color 0.3s ease, color 0.3s ease; /* Плавная смена темы */
 }
 
-/* Карточка */
+/* --- Карточка --- */
 .card {
   background: var(--card-bg);
-  color: var(--text);
-  padding: 24px; /* Чуть больше воздуха */
-  border-radius: 16px;
-  
-  /* Адаптивная ширина */
+  padding: 2rem; /* Больше воздуха внутри */
+  border-radius: 1.5rem; /* Сильные скругления (современно) */
   width: 100%;
-  max-width: 600px; /* Максимальная ширина */
-  
-  margin: 60px auto; /* Центрирование */
-  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.3); /* Тень помягче */
+  max-width: 640px; /* Чуть шире */
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border-color);
+  transition: all 0.3s ease;
+  position: relative;
+  margin: 20px;
 }
 
-/* Textarea */
+/* Заголовки и текст */
+h2 {
+  margin-top: 0;
+  font-weight: 700;
+  font-size: 1.5rem;
+  letter-spacing: -0.025em; /* Чуть плотнее буквы */
+  margin-bottom: 0.5rem;
+}
+
+p.small {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  margin-bottom: 1.5rem;
+}
+
+/* --- Поле ввода (Textarea) --- */
 .input-box {
-  width: 100%; /* Теперь это ровно 100% от родителя, включая отступы */
-  background: var(--card-bg);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 12px;
-  font-size: 16px;
-  resize: vertical; /* Разрешаем менять размер только по вертикали */
-  min-height: 100px;
+  width: 100%;
+  background: var(--input-bg);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 16px;
+  font-size: 1rem;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 120px;
+  outline: none;
+  transition: all 0.2s ease;
 }
 
-/* Кнопки */
+/* Эффект фокуса (свечение) */
+.input-box:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2); /* Полупрозрачное синее кольцо */
+}
+
+/* --- Кнопки --- */
 .btn {
   border: none;
-  padding: 8px 16px;
-  border-radius: 8px;
+  padding: 10px 20px;
+  border-radius: 10px;
   cursor: pointer;
-  color: white;
+  font-weight: 500;
+  font-size: 0.95rem;
+  transition: all 0.2s active;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn:active {
+  transform: scale(0.96); /* Эффект нажатия */
 }
 
 .btn-primary {
-  background: var(--btn-primary);
+  background: var(--primary);
+  color: white;
+  box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.4);
+}
+
+.btn-primary:hover {
+  background: var(--primary-hover);
+  box-shadow: 0 6px 10px -2px rgba(59, 130, 246, 0.5);
+}
+
+.btn-primary:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .btn-secondary {
-  background: var(--btn-secondary);
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+}
+
+.btn-secondary:hover {
+  background: var(--input-bg);
+  border-color: var(--text-secondary);
 }
 
 .btn-grey {
-  background: #6b7280;
+  background: transparent;
+  color: var(--text-secondary);
 }
 
+.btn-grey:hover {
+  color: #ef4444; /* Красный при наведении на "Очистить" */
+  background: rgba(239, 68, 68, 0.1);
+}
+
+/* Кнопка "Копировать" успешно */
 .copy-btn.copied {
-  background: #16a34a !important;
+  background: #10b981 !important; /* Зеленый */
+  box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.4);
 }
 
-/* Dropdown */
+/* --- Выпадающее меню (Dropdown) --- */
 .dropdown {
   position: absolute;
-  top: 110%;
+  top: 115%;
   left: 0;
-  background: var(--dropdown-bg);
-  border: 1px solid var(--dropdown-border);
-  padding: 10px;
-  border-radius: 8px;
-  width: 180px;
-  max-height: 200px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  padding: 8px;
+  border-radius: 12px;
+  width: 200px;
+  max-height: 250px;
   overflow-y: auto;
-  z-index: 10;
+  z-index: 20;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
-.dropdown button,
 .dropdown label {
-  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.2s;
+  color: var(--text-color);
+}
+
+.dropdown label:hover {
+  background: var(--input-bg);
+}
+
+/* Скроллбар для меню */
+.dropdown::-webkit-scrollbar {
+  width: 6px;
+}
+.dropdown::-webkit-scrollbar-thumb {
+  background-color: var(--border-color);
+  border-radius: 3px;
+}
+
+/* --- Результаты --- */
+.result-block {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px dashed var(--border-color); /* Разделительная линия */
+  animation: fadeIn 0.4s ease;
+}
+
+.result-item {
+  background: var(--input-bg); /* Подложка под каждый перевод */
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 16px;
+  border: 1px solid var(--border-color);
+}
+
+.result-title {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  font-weight: 600;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.result-text {
+  font-size: 1.05rem;
+  line-height: 1.6;
+  white-space: pre-wrap; /* Сохраняет абзацы */
+}
+
+/* Анимация появления */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Кнопка смены темы (плавающая в углу или красивая сверху) */
+.theme-toggle-btn {
+  font-size: 0.85rem;
+  padding: 6px 12px;
+  border-radius: 20px;
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+  margin-bottom: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.theme-toggle-btn:hover {
+  border-color: var(--primary);
 }
