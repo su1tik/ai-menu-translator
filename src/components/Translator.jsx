@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { lightTheme, darkTheme } from "../themes"; // Импортируем цвета
 
 export default function Translator() {
   const [text, setText] = useState("");
@@ -9,17 +10,25 @@ export default function Translator() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [theme, setTheme] = useState("light");
 
+  // 1. Инициализация темы при загрузке
   useEffect(() => {
     const saved = localStorage.getItem("theme") || "light";
     setTheme(saved);
-    document.body.classList.toggle("dark", saved === "dark");
   }, []);
 
+  // 2. ПРИМЕНЕНИЕ ТЕМЫ: При каждом изменении theme красим сайт
+  useEffect(() => {
+    const themeObj = theme === "light" ? lightTheme : darkTheme;
+
+    Object.keys(themeObj).forEach((key) => {
+      document.documentElement.style.setProperty(key, themeObj[key]);
+    });
+
+    localStorage.setItem("theme", theme);
+  }, [theme]);
+
   const toggleTheme = () => {
-    const next = theme === "light" ? "dark" : "light";
-    setTheme(next);
-    localStorage.setItem("theme", next);
-    document.body.classList.toggle("dark", next === "dark");
+    setTheme((prev) => (prev === "light" ? "dark" : "light"));
   };
 
   const languages = [
@@ -83,58 +92,41 @@ export default function Translator() {
 
     setLoading(true);
     setError("");
-    setTranslations({}); // Очищаем старые переводы
+    setTranslations({});
 
     const source = detectLanguageImproved(text);
-    // const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
-    const apiUrl = "";
+    const apiUrl = ""; // Работаем через Vercel API
 
     try {
-      // Проходим по каждому языку по очереди
-      for (const [index, target] of targets.entries()) {
-        // Пауза перед запросом (кроме самого первого), чтобы не злить Google
-        // Увеличили до 1500мс (1.5 сек) для надежности
-        if (index > 0) {
-          await new Promise((resolve) => setTimeout(resolve, 1500));
-        }
-
+      // 3. УСКОРЕНИЕ: Запускаем все переводы параллельно (без задержек)
+      const promises = targets.map(async (target) => {
         try {
           const res = await fetch(`${apiUrl}/api/translate`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              text,
-              source,
-              target,
-            }),
+            body: JSON.stringify({ text, source, target }),
           });
 
           const json = await res.json();
 
-          // Если сервер вернул ошибку (например, лимит), показываем её
-          if (json.error) {
-            throw new Error(json.error);
-          }
+          if (json.error) throw new Error(json.error);
 
-          let output = json.translation;
-          if (!output) output = "Ошибка сервера (пустой ответ)";
-
+          let output = json.translation || "Ошибка сервера";
           if (target === "tr") output = toLatin(output);
 
-          // Обновляем состояние СРАЗУ, не дожидаясь остальных языков
-          setTranslations((prev) => ({
-            ...prev,
-            [target]: output,
-          }));
+          // Обновляем UI сразу по готовности каждого языка
+          setTranslations((prev) => ({ ...prev, [target]: output }));
         } catch (err) {
-          console.error(`Ошибка для языка ${target}:`, err);
-          // Записываем ошибку в поле перевода, чтобы было видно, что пошло не так
+          console.error(`Ошибка ${target}:`, err);
           setTranslations((prev) => ({
             ...prev,
-            [target]: "Не удалось перевести (попробуйте позже)",
+            [target]: "Не удалось перевести",
           }));
         }
-      }
+      });
+
+      // Ждем завершения всех запросов
+      await Promise.all(promises);
     } catch (globalErr) {
       setError("Общая ошибка приложения");
     } finally {
@@ -144,47 +136,47 @@ export default function Translator() {
 
   const handleCopy = (text) => {
     navigator.clipboard.writeText(text);
-    const btn = document.activeElement;
-    btn.classList.add("copied");
-    setTimeout(() => btn.classList.remove("copied"), 800);
   };
 
   return (
     <div>
-      <button
-        onClick={toggleTheme}
-        className="btn btn-secondary"
-        style={{ marginBottom: 10 }}>
-        {theme === "light" ? "Тёмная тема" : "Светлая тема"}
-      </button>
+      {/* Кнопка смены темы справа сверху */}
+      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+        <button onClick={toggleTheme} className="theme-toggle-btn">
+          {theme === "light" ? "🌙 Тёмная тема" : "☀️ Светлая тема"}
+        </button>
+      </div>
 
       <h2>KAMI Menu Translator</h2>
+      <p className="small">Переводчик для электронных меню</p>
 
       <textarea
-        rows={4}
         className="input-box"
-        placeholder="Введите текст для перевода..."
+        placeholder="Введите названия блюд (можно списком)..."
         value={text}
         onChange={(e) => setText(e.target.value)}
       />
 
       <div
-        style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
-        <span style={{ opacity: 0.7 }}>Язык → Цели:</span>
-
+        style={{
+          marginTop: 20,
+          display: "flex",
+          gap: 10,
+          flexWrap: "wrap",
+          alignItems: "center",
+        }}>
         <div style={{ position: "relative" }}>
           <button
             className="btn btn-secondary"
             onClick={() => setShowDropdown((prev) => !prev)}>
-            {targets.length > 0
-              ? `Выбрано: ${targets.length}`
-              : "Выбрать языки"}
+            {targets.length > 0 ? `Языки: ${targets.length}` : "Выбрать языки"}{" "}
+            ▾
           </button>
 
           {showDropdown && (
             <div className="dropdown">
               {languages.map((l) => (
-                <label key={l.code} style={{ display: "flex", gap: 6 }}>
+                <label key={l.code}>
                   <input
                     type="checkbox"
                     checked={targets.includes(l.code)}
@@ -201,7 +193,7 @@ export default function Translator() {
           className="btn btn-primary"
           onClick={handleTranslate}
           disabled={loading}>
-          {loading ? "Перевожу..." : "Перевести"}
+          {loading ? "Переводим..." : "Перевести"}
         </button>
 
         <button
@@ -217,6 +209,7 @@ export default function Translator() {
 
       {error && <div style={{ marginTop: 12, color: "#ef4444" }}>{error}</div>}
 
+      {/* Вывод результатов */}
       {Object.keys(translations).length > 0 && (
         <div className="result-block">
           {Object.entries(translations).map(([lang, result]) => {
@@ -229,18 +222,31 @@ export default function Translator() {
                   style={{
                     display: "flex",
                     justifyContent: "space-between",
-                    alignItems: "flex-start",
+                    alignItems: "center",
                     marginBottom: 8,
                   }}>
                   <span className="result-title">{langName}</span>
                   <button
-                    onClick={() => handleCopy(result)}
-                    className="copy-btn btn btn-primary"
-                    style={{ padding: "4px 10px", fontSize: "0.8rem" }}>
+                    onClick={(e) => {
+                      handleCopy(result);
+                      // Визуальный эффект смены текста на кнопке
+                      const originalText = e.target.innerText;
+                      e.target.innerText = "Скопировано!";
+                      e.target.classList.add("copied");
+                      setTimeout(() => {
+                        e.target.innerText = "Копировать";
+                        e.target.classList.remove("copied");
+                      }, 1000);
+                    }}
+                    className="btn btn-primary"
+                    style={{
+                      padding: "4px 12px",
+                      fontSize: "0.75rem",
+                      height: "auto",
+                    }}>
                     Копировать
                   </button>
                 </div>
-
                 <div className="result-text">{result}</div>
               </div>
             );
