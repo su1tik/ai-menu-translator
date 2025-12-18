@@ -49,6 +49,7 @@ export default function Translator() {
     { code: "es", name: "Испанский" },
     { code: "zh", name: "Китайский" },
     { code: "ja", name: "Японский" },
+    { code: "ar", name: "Арабский" },
   ];
 
   const handleTargetChange = (code) => {
